@@ -1,10 +1,12 @@
 ﻿using Aliyun.OSS;
 using Aliyun.OSS.Common;
+using Aliyun.OSS.Util;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 
 namespace AliyunOSSBackUp
 {
@@ -17,13 +19,13 @@ namespace AliyunOSSBackUp
         public static readonly string backupFilePath = ConfigurationManager.AppSettings["backupFilePath"];
         public static readonly string bucketName = ConfigurationManager.AppSettings["bucketName"];
         public static readonly string baseobjectName = ConfigurationManager.AppSettings["baseobjectName"];
-        public static readonly int maxDayBackups = Convert.ToInt32(ConfigurationManager.AppSettings["maxDayBackups"]);
+        public static readonly int maxSizeRollBackups = Convert.ToInt32(ConfigurationManager.AppSettings["maxSizeRollBackups"]);
         private static string directoryPath = @"c:\temp";
 
         public static void Execut()
         {
             Console.WriteLine("Begain backup......");
-            var localFilename=BackUp();
+            var localFilename = BackUp();
             Console.WriteLine("Finish backup......");
             Console.WriteLine("Begain Delete expired files......");
             var list = ListFile();
@@ -38,7 +40,7 @@ namespace AliyunOSSBackUp
             if (!Directory.Exists(backupFilePath))
                 Console.WriteLine("backupFilePath do not exists");
             var dir = new DirectoryInfo(backupFilePath);
-            var zipName = $"{dir.Name}_{DateTime.Now.ToString("yyyyMMddHHmmss")}.zip";
+            var zipName = $"{dir.Name}_{DateTime.Now.ToString("yyyyMMddHHmmss")}_{Guid.NewGuid()}.zip";
             var localFilename = Path.Combine(directoryPath, zipName);
             if (!Directory.Exists(directoryPath))
                 Directory.CreateDirectory(directoryPath);
@@ -54,6 +56,7 @@ namespace AliyunOSSBackUp
                     PartSize = 8 * 1024 * 1024,
                     ParallelThreadCount = 3,
                     CheckpointDir = directoryPath,
+
                 };
                 client.ResumableUploadObject(request);
                 Console.WriteLine("Resumable upload object:{0} succeeded", objectName);
@@ -67,6 +70,7 @@ namespace AliyunOSSBackUp
             {
                 Console.WriteLine("Failed with error info: {0}", ex.Message);
             }
+
             return localFilename;
         }
 
@@ -89,14 +93,11 @@ namespace AliyunOSSBackUp
                         Prefix = prefix,
                     };
                     result = client.ListObjects(listObjectsRequest);
-                    foreach (var summary in result.ObjectSummaries)
+                    var list = result.ObjectSummaries.ToList().OrderByDescending(d => d.LastModified).Skip(maxSizeRollBackups).ToList();
+                    foreach (var summary in list)
                     {
                         Console.WriteLine(summary.Key);
-                        var LastModified = summary.LastModified;
-                        if (LastModified.AddDays(maxDayBackups) < DateTime.UtcNow)
-                        {
-                            keys.Add(summary.Key);
-                        }
+                        keys.Add(summary.Key);
                     }
                     nextMarker = result.NextMarker;
                 } while (result.IsTruncated);
