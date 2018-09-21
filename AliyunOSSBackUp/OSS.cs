@@ -40,7 +40,7 @@ namespace AliyunOSSBackUp
             if (!Directory.Exists(backupFilePath))
                 Console.WriteLine("backupFilePath do not exists");
             var dir = new DirectoryInfo(backupFilePath);
-            var zipName = $"{dir.Name}_{DateTime.Now.ToString("yyyyMMddHHmmss")}_{Guid.NewGuid()}.zip";
+            var zipName = $"{dir.Name}_{DateTime.Now.ToString("yyyyMMddHHmmss")}.zip";
             var localFilename = Path.Combine(directoryPath, zipName);
             if (!Directory.Exists(directoryPath))
                 Directory.CreateDirectory(directoryPath);
