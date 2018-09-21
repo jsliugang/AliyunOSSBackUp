@@ -23,15 +23,17 @@ namespace AliyunOSSBackUp
         public static void Execut()
         {
             Console.WriteLine("Begain backup......");
-            BackUp();
+            var localFilename=BackUp();
             Console.WriteLine("Finish backup......");
             Console.WriteLine("Begain Delete expired files......");
             var list = ListFile();
             DeleteFile(list);
+            if (File.Exists(localFilename))
+                File.Delete(localFilename);
             Console.WriteLine("Finish Delete expired files......");
         }
 
-        private static void BackUp()
+        private static string BackUp()
         {
             if (!Directory.Exists(backupFilePath))
                 Console.WriteLine("backupFilePath do not exists");
@@ -65,6 +67,7 @@ namespace AliyunOSSBackUp
             {
                 Console.WriteLine("Failed with error info: {0}", ex.Message);
             }
+            return localFilename;
         }
 
         private static List<string> ListFile()
