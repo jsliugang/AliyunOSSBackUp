@@ -24,18 +24,22 @@ namespace AliyunOSSBackUp
 
         public static void Execut()
         {
-            Console.WriteLine("Begain backup......");
-            var localFilename = BackUp();
-            Console.WriteLine("Finish backup......");
-            Console.WriteLine("Begain Delete expired files......");
-            var list = ListFile();
-            DeleteFile(list);
-            if (File.Exists(localFilename))
-                File.Delete(localFilename);
-            Console.WriteLine("Finish Delete expired files......");
+            foreach (var item in backupFilePath.Split(';'))
+            {
+                Console.WriteLine($"Begain backup  {item}......");
+                var localFilename = BackUp(item);
+                Console.WriteLine($"Finish backup  {item}......");
+                Console.WriteLine("Begain delete expired files......");
+                var list = ListFile(item);
+                DeleteFile(list);
+                if (File.Exists(localFilename))
+                    File.Delete(localFilename);
+                Console.WriteLine("Finish Delete expired files......");
+            }
+            Console.WriteLine($"Backup finish ------{DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.fff")}");
         }
 
-        private static string BackUp()
+        private static string BackUp(string backupFilePath)
         {
             if (!Directory.Exists(backupFilePath))
                 Console.WriteLine("backupFilePath do not exists");
@@ -74,7 +78,7 @@ namespace AliyunOSSBackUp
             return localFilename;
         }
 
-        private static List<string> ListFile()
+        private static List<string> ListFile(string backupFilePath)
         {
             var keys = new List<string>();
             var dir = new DirectoryInfo(backupFilePath);
